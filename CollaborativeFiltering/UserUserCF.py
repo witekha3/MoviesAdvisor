@@ -6,13 +6,14 @@ import numpy as np
 from imdb import IMDb, IMDbDataAccessError
 
 from CollaborativeFiltering.PersonCorrelation import PersonCorrelation
+from Tools import Config
 
 
 class UserUserCF(PersonCorrelation):
     """Class recommending the best product using the User User Collaborative Filtering algorithm"""
-    def __init__(self, num_of_neighbors, main_user_id):
+    def __init__(self):
         """Constructor inheriting from the PersonCorrelation class"""
-        super().__init__(num_of_neighbors, main_user_id, 1)
+        super().__init__()
 
     def get_only_neighbors_movies(self):
         """Returns movies watched by neighbors with target user did not watched"""
@@ -41,18 +42,18 @@ class UserUserCF(PersonCorrelation):
         return score / similarity_sum
 
     @staticmethod
-    def _get_move_and_year(imdb, best_movie):
+    def _get_movie_and_year(imdb, best_movie):
         while True:
             try:
                 movie = imdb.get_movie(best_movie[0])
                 return movie, str(movie['year'])
             except (KeyError, IMDbDataAccessError):
                 print("Error, retrying...")
-                time.sleep(1)
+                time.sleep(3)
                 continue
 
 
-    def get_best_movies(self, num_of_movies):
+    def get_best_movies(self):
         """Returns movies with highest values"""
         unwatched_movies_ratings_prediction = []
         imdb = IMDb()
@@ -60,10 +61,10 @@ class UserUserCF(PersonCorrelation):
         for movie in self.get_only_neighbors_movies():
             score = self.calculate_rating_prediction(movie)
             unwatched_movies_ratings_prediction.append([movie, score])
-        for i in range(1, num_of_movies+1):
+        for i in range(1, Config.num_of_movies+1):
             best_movie = max(unwatched_movies_ratings_prediction, key=operator.itemgetter(1))
             #print(best_movie)
-            movie, year = UserUserCF._get_move_and_year(imdb, best_movie)
+            movie, year = UserUserCF._get_movie_and_year(imdb, best_movie)
             best_movies_message += f"{i}: \t{movie} ({year}).\n\tPredicted rate: {best_movie[1]}\n"
             unwatched_movies_ratings_prediction.remove(best_movie)
         return best_movies_message
